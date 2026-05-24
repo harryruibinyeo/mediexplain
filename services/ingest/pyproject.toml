@@ -1,0 +1,13 @@
+[project]
+name = "mediexplain-ingest"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg2-binary>=2.9",
+    "pgvector>=0.3",
+    "sentence-transformers>=3.0",
+    "structlog>=24.0",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

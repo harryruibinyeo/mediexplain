@@ -29,12 +29,12 @@ RAG, vLLM, containers on UBI, Kubernetes, CI/CD, sovereign AI.
 - [x] WSL2 running
 - [x] Git + GitHub connected
 - [x] Dev tools installed (uv, podman, kind, kubectl)
+- [x] Knowledge base scraped — 1,117 raw JSON articles from HealthHub (health conditions + medications) in data/webscraping/raw/
 - [ ] Project structure scaffolded
-- [ ] Synthetic data built
 - [ ] Services built
 - [ ] Running in kind
 - [ ] CI/CD live
 - [ ] Demo recorded
 
 ## Next Step
-Scaffold project structure, then build synthetic data generator
+Scaffold project structure, then build ingest service to chunk + embed the raw JSON files into pgvector
