@@ -1,7 +1,7 @@
 # Red Hat UBI9 Python 3.11 base image
 FROM registry.access.redhat.com/ubi9/python-311:latest
 
-WORKDIR /app
+WORKDIR /opt/app-root/src
 
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .

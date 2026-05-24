@@ -3,17 +3,15 @@
 # — required for OpenShift compatibility and the Red Hat portfolio demo
 FROM registry.access.redhat.com/ubi9/python-311:latest
 
-WORKDIR /app
+# /opt/app-root/src is UBI9's default app directory — already owned by
+# the non-root user (uid 1001) so pip can write during build
+WORKDIR /opt/app-root/src
 
-# Copy dependency manifest first so Podman can cache this layer.
-# If only main.py changes on rebuild, this pip install step is skipped.
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
-# Copy the ingest script
 COPY main.py .
 
-# Mount point for the scraped JSON files (supplied at runtime via -v)
 VOLUME ["/data/raw"]
 
 ENTRYPOINT ["python", "main.py"]
