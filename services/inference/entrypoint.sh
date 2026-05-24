@@ -42,10 +42,7 @@ exec python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization  "$GPU_MEMORY_UTILIZATION" \
     --host                    0.0.0.0 \
     --port                    "$PORT" \
-    --enable-metrics \
     --served-model-name       "$MODEL_NAME"
 
-# --enable-metrics exposes a Prometheus-compatible /metrics endpoint at:
-#   GET http://inference:8000/metrics
-# This gives you token throughput, request latency, GPU utilisation —
-# all scrapable by Prometheus and visible in Grafana dashboards.
+# Prometheus /metrics endpoint is enabled by default in vLLM 0.21+
+# GET http://inference:8000/metrics

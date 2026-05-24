@@ -80,6 +80,7 @@ services:
       CHUNK_OVERLAP: "100"
     volumes:
       - ./data/webscraping/raw:/data/raw:ro   # mount scraped JSON files (read-only)
+      - hf-cache:/root/.cache/huggingface     # cache all-mpnet-base-v2 across runs
     depends_on:
       postgres:
         condition: service_healthy

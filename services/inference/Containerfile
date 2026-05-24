@@ -2,7 +2,7 @@
 # vLLM requires Python 3.11 and CUDA 12.1+
 FROM registry.access.redhat.com/ubi9/python-311:latest
 
-WORKDIR /app
+WORKDIR /opt/app-root/src
 
 # Upgrade pip — vLLM requires a recent version
 RUN pip install --no-cache-dir --upgrade pip
@@ -12,9 +12,8 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir vllm
 
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
 
 # vLLM serves on port 8000 (OpenAI-compatible API)
 EXPOSE 8000
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["bash", "entrypoint.sh"]

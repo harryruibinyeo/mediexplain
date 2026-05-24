@@ -266,7 +266,7 @@ def main() -> None:
     log.info(
         "embed_model_loaded",
         model=EMBED_MODEL,
-        embedding_dim=model.get_sentence_embedding_dimension(),
+        embedding_dim=model.get_embedding_dimension(),
         load_time_s=round(time.perf_counter() - t0, 2),
     )
 
