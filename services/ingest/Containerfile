@@ -8,6 +8,11 @@ FROM registry.access.redhat.com/ubi9/python-311:latest
 WORKDIR /opt/app-root/src
 
 COPY pyproject.toml .
+# Install CPU-only PyTorch before everything else.
+# sentence-transformers depends on torch — without this pip pulls the full
+# CUDA build (~2GB). The ingest service only generates embeddings and runs
+# perfectly on CPU. This cuts the image build download to ~200MB.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir .
 
 COPY main.py .
