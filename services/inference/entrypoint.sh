@@ -42,7 +42,9 @@ exec python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization  "$GPU_MEMORY_UTILIZATION" \
     --host                    0.0.0.0 \
     --port                    "$PORT" \
-    --served-model-name       "$MODEL_NAME"
+    --served-model-name       "$MODEL_NAME" \
+    --enable-auto-tool-choice \
+    --tool-call-parser        hermes
 
 # Prometheus /metrics endpoint is enabled by default in vLLM 0.21+
 # GET http://inference:8000/metrics

@@ -105,9 +105,11 @@ services:
       MODEL_NAME:              Qwen/Qwen2.5-7B-Instruct-AWQ
       QUANTIZATION:            awq
       DTYPE:                   half
-      MAX_MODEL_LEN:           "4096"
-      GPU_MEMORY_UTILIZATION:  "0.90"
+      MAX_MODEL_LEN:           "2048"
+      GPU_MEMORY_UTILIZATION:  "0.85"
       PORT:                    "8000"
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "0"
     ports:
       - "8000:8000"
     volumes:

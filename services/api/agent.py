@@ -74,7 +74,7 @@ def create_agent_executor(
         api_key="not-needed",        # vLLM doesn't require an API key
         model=model_name,
         temperature=0,               # deterministic output for medical explanations
-        max_tokens=1024,
+        max_tokens=512,
     )
 
     # Prompt template — {input} is the PDF text, {agent_scratchpad} is

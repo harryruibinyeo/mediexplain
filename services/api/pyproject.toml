@@ -14,11 +14,11 @@ dependencies = [
     "pgvector>=0.3",
     # Embeddings (must match ingest service model)
     "sentence-transformers>=3.0",
-    # LangChain — agent framework
-    "langchain>=0.3",
-    "langchain-openai>=0.2",      # connects LangChain to vLLM's OpenAI-compatible API
-    "langchain-community>=0.3",   # pgvector retriever + community tools
-    "langchain-core>=0.3",
+    # LangChain — agent framework (AgentExecutor removed in 0.4)
+    "langchain>=0.3,<0.4",
+    "langchain-openai>=0.2,<0.4",
+    "langchain-community>=0.3,<0.4",
+    "langchain-core>=0.3,<0.4",
     # Observability
     "structlog>=24.0",
     "prometheus-fastapi-instrumentator>=7.0",  # auto-instruments FastAPI endpoints

@@ -147,6 +147,12 @@ async def explain(file: UploadFile = File(...)):
         raise HTTPException(status_code=422,
                             detail="Could not extract readable text from this PDF.")
 
+    # Truncate to fit within the 2048-token context window (model limit)
+    # ~1500 chars ≈ 350 tokens, leaving room for system prompt + tools + output
+    if len(doc_text) > 1500:
+        doc_text = doc_text[:1500] + "\n[Document truncated for length]"
+        log.info("pdf_truncated", filename=file.filename)
+
     # Run the LangChain agent
     result = await agent.run(doc_text=doc_text, executor=app.state.executor)
 
