@@ -3,15 +3,26 @@ name = "mediexplain-api"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    # Web framework
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
+    "python-multipart>=0.0.9",
+    # PDF extraction
     "pdfplumber>=0.11",
+    # Database
     "psycopg2-binary>=2.9",
     "pgvector>=0.3",
-    "openai>=1.0",
+    # Embeddings (must match ingest service model)
     "sentence-transformers>=3.0",
+    # LangChain — agent framework
+    "langchain>=0.3",
+    "langchain-openai>=0.2",      # connects LangChain to vLLM's OpenAI-compatible API
+    "langchain-community>=0.3",   # pgvector retriever + community tools
+    "langchain-core>=0.3",
+    # Observability
     "structlog>=24.0",
-    "python-multipart>=0.0.9",
+    "prometheus-fastapi-instrumentator>=7.0",  # auto-instruments FastAPI endpoints
+    "prometheus-client>=0.21",                 # custom metrics (agent latency, tool calls)
 ]
 
 [tool.ruff.lint]

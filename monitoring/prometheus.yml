@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s      # scrape every 15 seconds
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  # vLLM inference service
+  # Exposes: GPU cache usage, tokens/sec, request latency, queue depth
+  - job_name: vllm
+    static_configs:
+      - targets: ["inference:8000"]
+    metrics_path: /metrics
+
+  # MediExplain API service
+  # Exposes: HTTP request counts, latency, agent latency, tool calls
+  - job_name: mediexplain_api
+    static_configs:
+      - targets: ["api:8001"]
+    metrics_path: /metrics
+
+  # Prometheus itself — useful for monitoring the monitor
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

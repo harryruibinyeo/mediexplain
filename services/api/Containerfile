@@ -1,0 +1,14 @@
+# Red Hat UBI9 Python 3.11 base image
+FROM registry.access.redhat.com/ubi9/python-311:latest
+
+WORKDIR /app
+
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e .
+
+COPY main.py agent.py tools.py .
+
+# FastAPI serves on port 8001
+EXPOSE 8001
+
+ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
