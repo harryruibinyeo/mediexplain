@@ -274,6 +274,12 @@ def main() -> None:
     db_display = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
     log.info("connecting_db", host=db_display)
     conn = psycopg2.connect(DATABASE_URL)
+
+    # Install the pgvector extension first, then register the vector type.
+    # register_vector() fails if the extension isn't installed yet.
+    with conn.cursor() as cur:
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        conn.commit()
     register_vector(conn)
     log.info("db_connected")
 
