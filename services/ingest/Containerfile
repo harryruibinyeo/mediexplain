@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy dependency manifest first so Podman can cache this layer.
 # If only main.py changes on rebuild, this pip install step is skipped.
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir .
 
 # Copy the ingest script
 COPY main.py .
