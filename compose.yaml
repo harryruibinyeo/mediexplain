@@ -22,7 +22,7 @@ services:
   # Stores all chunked HealthHub articles and their 768-dim embeddings.
   # ---------------------------------------------------------------------------
   postgres:
-    image: pgvector/pgvector:pg16
+    image: docker.io/pgvector/pgvector:pg16
     environment:
       POSTGRES_DB:       mediexplain
       POSTGRES_USER:     mediexplain
@@ -170,7 +170,7 @@ services:
   # UI at http://localhost:9090
   # ---------------------------------------------------------------------------
   prometheus:
-    image: prom/prometheus:latest
+    image: docker.io/prom/prometheus:latest
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -189,7 +189,7 @@ services:
   # Prometheus data source is auto-provisioned — no manual setup needed.
   # ---------------------------------------------------------------------------
   grafana:
-    image: grafana/grafana:latest
+    image: docker.io/grafana/grafana:latest
     environment:
       GF_SECURITY_ADMIN_USER:     admin
       GF_SECURITY_ADMIN_PASSWORD: admin
