@@ -1,0 +1,11 @@
+# Grafana auto-provisioning — connects Grafana to Prometheus on first start.
+# No manual setup needed: open Grafana at http://localhost:3000 and
+# Prometheus is already available as a data source.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true

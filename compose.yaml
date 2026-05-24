@@ -1,0 +1,215 @@
+# MediExplain SG — Local Development Stack
+#
+# Start everything:         podman-compose up
+# Load knowledge base:      podman-compose --profile ingest run --rm ingest
+# Stop everything:          podman-compose down
+# Wipe all data:            podman-compose down -v
+#
+# First run: vLLM will download Qwen 2.5 7B AWQ (~4.5GB) from HuggingFace.
+# This takes a few minutes. Subsequent starts reuse the cached model.
+#
+# URLs once running:
+#   Streamlit UI   http://localhost:8501
+#   FastAPI docs   http://localhost:8001/docs
+#   Prometheus     http://localhost:9090
+#   Grafana        http://localhost:3000  (admin / admin)
+#   MinIO console  http://localhost:9001  (minioadmin / minioadmin)
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL + pgvector
+  # Stores all chunked HealthHub articles and their 768-dim embeddings.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB:       mediexplain
+      POSTGRES_USER:     mediexplain
+      POSTGRES_PASSWORD: mediexplain
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediexplain"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible object store
+  # Stores uploaded PDF files so they can be referenced later if needed.
+  # Console at http://localhost:9001
+  # ---------------------------------------------------------------------------
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER:     minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Ingest — one-time job to load HealthHub articles into pgvector
+  #
+  # Only runs when explicitly triggered with the 'ingest' profile:
+  #   podman-compose --profile ingest run --rm ingest
+  #
+  # Safe to re-run — articles already in the database are skipped.
+  # ---------------------------------------------------------------------------
+  ingest:
+    build:
+      context: services/ingest
+    environment:
+      DATABASE_URL: postgresql://mediexplain:mediexplain@postgres:5432/mediexplain
+      RAW_DATA_DIR: /data/raw
+      EMBED_MODEL:  all-mpnet-base-v2
+      CHUNK_SIZE:   "600"
+      CHUNK_OVERLAP: "100"
+    volumes:
+      - ./data/webscraping/raw:/data/raw:ro   # mount scraped JSON files (read-only)
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - ingest
+    restart: "no"
+
+  # ---------------------------------------------------------------------------
+  # Inference — vLLM serving Qwen 2.5 7B AWQ on your RTX 3070
+  #
+  # First start: downloads model from HuggingFace (~4.5GB, a few minutes).
+  # Subsequent starts: loads from hf-cache volume (~45 seconds).
+  #
+  # GPU passthrough via NVIDIA CDI (configured during GPU setup).
+  # Exposes OpenAI-compatible API at http://localhost:8000/v1
+  # Exposes Prometheus metrics at http://localhost:8000/metrics
+  # ---------------------------------------------------------------------------
+  inference:
+    build:
+      context: services/inference
+    environment:
+      MODEL_NAME:              Qwen/Qwen2.5-7B-Instruct-AWQ
+      QUANTIZATION:            awq
+      DTYPE:                   half
+      MAX_MODEL_LEN:           "4096"
+      GPU_MEMORY_UTILIZATION:  "0.90"
+      PORT:                    "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/root/.cache/huggingface   # model cached here after first download
+    devices:
+      - nvidia.com/gpu=all                  # CDI GPU passthrough to RTX 3070
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s    # allow 3 minutes for model download + load on first run
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # API — FastAPI + LangChain agent
+  # Receives PDFs, runs the ReAct agent, returns explanations.
+  # Exposes Prometheus metrics at http://localhost:8001/metrics
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: services/api
+    environment:
+      DATABASE_URL: postgresql://mediexplain:mediexplain@postgres:5432/mediexplain
+      VLLM_URL:     http://inference:8000
+      MODEL_NAME:   Qwen/Qwen2.5-7B-Instruct-AWQ
+      EMBED_MODEL:  all-mpnet-base-v2
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      inference:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # UI — Streamlit frontend
+  # Two pages: Explain Document + Live Monitoring
+  # ---------------------------------------------------------------------------
+  ui:
+    build:
+      context: services/ui
+    environment:
+      API_URL:        http://api:8001
+      PROMETHEUS_URL: http://prometheus:9090
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — scrapes metrics from vLLM and the API every 15s
+  # UI at http://localhost:9090
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Grafana — dashboards on top of Prometheus data
+  # UI at http://localhost:3000  (login: admin / admin)
+  # Prometheus data source is auto-provisioned — no manual setup needed.
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER:     admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+# ---------------------------------------------------------------------------
+# Named volumes — data persists across container restarts
+# ---------------------------------------------------------------------------
+volumes:
+  pgdata:          # PostgreSQL database files
+  minio-data:      # MinIO object storage
+  hf-cache:        # HuggingFace model cache (Qwen 2.5 7B AWQ ~4.5GB)
+  prometheus-data: # Prometheus time-series data
+  grafana-data:    # Grafana dashboards and settings

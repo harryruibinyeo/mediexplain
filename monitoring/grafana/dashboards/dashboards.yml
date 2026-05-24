@@ -1,0 +1,10 @@
+# Tells Grafana where to find dashboard JSON files.
+# Any .json file placed in this directory is auto-loaded on startup.
+apiVersion: 1
+
+providers:
+  - name: MediExplain
+    folder: MediExplain SG
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
