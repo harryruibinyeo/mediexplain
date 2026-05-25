@@ -76,6 +76,14 @@ if page == "📄 Explain Document":
     )
     st.markdown("---")
 
+    # Persist result across tab switches
+    if "explanation_result" not in st.session_state:
+        st.session_state.explanation_result = None
+    if "explanation_latency" not in st.session_state:
+        st.session_state.explanation_latency = None
+    if "explanation_filename" not in st.session_state:
+        st.session_state.explanation_filename = None
+
     col_upload, col_result = st.columns([1, 1], gap="large")
 
     with col_upload:
@@ -87,9 +95,6 @@ if page == "📄 Explain Document":
         )
 
         explain_btn = st.button("Explain", type="primary", use_container_width=True)
-
-    with col_result:
-        st.subheader("Explanation")
 
         if explain_btn:
             if uploaded_file is None:
@@ -107,8 +112,8 @@ if page == "📄 Explain Document":
                         )
                         response.raise_for_status()
                         result = response.json()
-
                         latency = round(time.perf_counter() - t_start, 1)
+
                         log.info(
                             "ui_explain_complete",
                             filename=uploaded_file.name,
@@ -116,24 +121,9 @@ if page == "📄 Explain Document":
                             citations=len(result.get("citations", [])),
                         )
 
-                        # Explanation text
-                        st.markdown(result.get("explanation", "No explanation returned."))
-
-                        # Citations
-                        citations = result.get("citations", [])
-                        if citations:
-                            st.markdown("---")
-                            st.markdown("**Sources from HealthHub:**")
-                            for c in citations:
-                                st.markdown(f"- [{c['title']}]({c['url']})")
-
-                        # Meta info
-                        meta = result.get("meta", {})
-                        st.markdown("---")
-                        m1, m2, m3 = st.columns(3)
-                        m1.metric("Response time", f"{latency}s")
-                        m2.metric("Tool calls", meta.get("tool_calls", "—"))
-                        m3.metric("Citations", len(citations))
+                        st.session_state.explanation_result = result
+                        st.session_state.explanation_latency = latency
+                        st.session_state.explanation_filename = uploaded_file.name
 
                     except httpx.HTTPStatusError as e:
                         st.error(f"API error {e.response.status_code}: {e.response.text}")
@@ -141,6 +131,33 @@ if page == "📄 Explain Document":
                     except Exception as e:
                         st.error(f"Something went wrong: {str(e)}")
                         log.error("ui_explain_failed", error=str(e))
+
+    with col_result:
+        st.subheader("Explanation")
+
+        if st.session_state.explanation_result is not None:
+            result = st.session_state.explanation_result
+            latency = st.session_state.explanation_latency
+            filename = st.session_state.explanation_filename
+
+            if filename:
+                st.caption(f"Result for: **{filename}**")
+
+            st.markdown(result.get("explanation", "No explanation returned."))
+
+            citations = result.get("citations", [])
+            if citations:
+                st.markdown("---")
+                st.markdown("**Sources from HealthHub:**")
+                for c in citations:
+                    st.markdown(f"- [{c['title']}]({c['url']})")
+
+            meta = result.get("meta", {})
+            st.markdown("---")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Response time", f"{latency}s")
+            m2.metric("Tool calls", meta.get("tool_calls", "—"))
+            m3.metric("Citations", len(citations))
         else:
             st.info("Upload a PDF and click **Explain** to get started.")
 
@@ -350,6 +367,6 @@ elif page == "📊 Live Monitoring":
             )
 
             st.caption(
-                f"Prometheus: {PROMETHEUS_URL} · "
+                "[Open Prometheus UI →](http://localhost:9090) · "
                 "Metrics refresh on every page load or Refresh click."
             )

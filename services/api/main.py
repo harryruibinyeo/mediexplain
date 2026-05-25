@@ -34,7 +34,6 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sentence_transformers import SentenceTransformer
 
 import agent
-from tools import make_tools
 
 # ---------------------------------------------------------------------------
 # Structured logging
@@ -78,14 +77,11 @@ async def lifespan(app: FastAPI):
     register_vector(conn)
     log.info("db_connected")
 
-    # Build LangChain tools and agent executor — reused for every request
-    tools = make_tools(conn, embed_model)
-    executor = agent.create_agent_executor(VLLM_URL, MODEL_NAME, tools)
-    log.info("agent_ready", tools=[t.name for t in tools])
+    log.info("agent_ready", tools=["search_conditions", "search_medications"])
 
     # Store on app.state so route handlers can access them
-    app.state.conn     = conn
-    app.state.executor = executor
+    app.state.conn        = conn
+    app.state.embed_model = embed_model
 
     log.info("api_ready")
     yield
@@ -149,12 +145,17 @@ async def explain(file: UploadFile = File(...)):
 
     # Truncate to fit within the 2048-token context window (model limit)
     # ~1500 chars ≈ 350 tokens, leaving room for system prompt + tools + output
-    if len(doc_text) > 1500:
-        doc_text = doc_text[:1500] + "\n[Document truncated for length]"
+    if len(doc_text) > 1800:
+        doc_text = doc_text[:1800] + "\n[Document truncated for length]"
         log.info("pdf_truncated", filename=file.filename)
 
-    # Run the LangChain agent
-    result = await agent.run(doc_text=doc_text, executor=app.state.executor)
+    result = await agent.run(
+        doc_text=doc_text,
+        conn=app.state.conn,
+        embed_model=app.state.embed_model,
+        vllm_url=VLLM_URL,
+        model_name=MODEL_NAME,
+    )
 
     log.info(
         "explain_complete",

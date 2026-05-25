@@ -137,6 +137,11 @@ services:
       VLLM_URL:     http://inference:8000
       MODEL_NAME:   Qwen/Qwen2.5-7B-Instruct-AWQ
       EMBED_MODEL:  all-mpnet-base-v2
+    entrypoint: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    volumes:
+      - ./services/api/main.py:/opt/app-root/src/main.py
+      - ./services/api/agent.py:/opt/app-root/src/agent.py
+      - ./services/api/tools.py:/opt/app-root/src/tools.py
     ports:
       - "8001:8001"
     depends_on:
@@ -161,6 +166,8 @@ services:
     environment:
       API_URL:        http://api:8001
       PROMETHEUS_URL: http://prometheus:9090
+    volumes:
+      - ./services/ui/main.py:/opt/app-root/src/main.py
     ports:
       - "8501:8501"
     depends_on:
