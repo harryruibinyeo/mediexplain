@@ -14,6 +14,43 @@ from sentence_transformers import SentenceTransformer
 log = structlog.get_logger()
 
 
+def search_by_title(
+    conn,
+    entity: str,
+    category: str | None = None,
+) -> list[dict]:
+    """
+    Exact title match lookup — used for medication/condition names where
+    semantic search returns wrong articles (e.g. 'Gliclazide' → 'Ezetimibe').
+    Returns up to 1 result with similarity=1.0 if found, empty list otherwise.
+    """
+    if category:
+        sql = """
+            SELECT title, url, chunk_text FROM knowledge_base
+            WHERE title ILIKE %s AND category = %s
+            LIMIT 1
+        """
+        params = [f"%{entity}%", category]
+    else:
+        sql = """
+            SELECT title, url, chunk_text FROM knowledge_base
+            WHERE title ILIKE %s
+            LIMIT 1
+        """
+        params = [f"%{entity}%"]
+
+    with conn.cursor() as cur:
+        cur.execute(sql, params)
+        row = cur.fetchone()
+
+    if not row:
+        return []
+
+    title, url, chunk_text = row
+    log.info("title_match_found", entity=entity, title=title)
+    return [{"title": title, "url": url, "excerpt": chunk_text[:150], "similarity": 1.0}]
+
+
 def search_direct(
     conn,
     embed_model: SentenceTransformer,
