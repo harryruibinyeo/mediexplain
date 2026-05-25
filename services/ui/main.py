@@ -62,7 +62,6 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.caption("Powered by Qwen 2.5 7B · HealthHub SG · pgvector")
 
-
 # ===========================================================================
 # PAGE 1 — EXPLAIN DOCUMENT
 # ===========================================================================

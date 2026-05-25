@@ -143,7 +143,7 @@ async def explain(file: UploadFile = File(...)):
         raise HTTPException(status_code=422,
                             detail="Could not extract readable text from this PDF.")
 
-    # Truncate to fit within the 2048-token context window (model limit)
+    # Truncate to fit within the 2048-token context window (RTX 3070 8GB VRAM)
     # ~1500 chars ≈ 350 tokens, leaving room for system prompt + tools + output
     if len(doc_text) > 1800:
         doc_text = doc_text[:1800] + "\n[Document truncated for length]"

@@ -81,7 +81,7 @@ async def _extract_entities(doc_text: str, vllm_url: str, model_name: str) -> di
                 "max_tokens": 150,
                 "temperature": 0,
             },
-            timeout=60.0,
+            timeout=180.0,
         )
         response.raise_for_status()
 
@@ -229,7 +229,7 @@ async def run(
                 "max_tokens":  600,
                 "temperature": 0,
             },
-            timeout=120.0,
+            timeout=300.0,
         )
         if not response.is_success:
             log.error("vllm_error", status=response.status_code, body=response.text[:500])

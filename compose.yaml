@@ -170,9 +170,6 @@ services:
       - ./services/ui/main.py:/opt/app-root/src/main.py
     ports:
       - "8501:8501"
-    depends_on:
-      api:
-        condition: service_healthy
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
