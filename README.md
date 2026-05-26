@@ -15,6 +15,15 @@ A personal portfolio project demonstrating: RAG pipelines, vLLM inference, conta
 **Live Monitoring** — Real-time GPU usage, token throughput, agent latency, and tool call breakdowns from Prometheus.
 
 ---
+## Streamlit Interface Screenshots
+
+<img width="1912" height="907" alt="image" src="https://github.com/user-attachments/assets/ef5f96ce-e9dd-4c4a-b761-fc688a70bdc2" />
+<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/f140e3bc-3862-4c87-b242-0e5413caf2ba" />
+<img width="1860" height="851" alt="image" src="https://github.com/user-attachments/assets/d43b62f5-3b89-4aca-908d-e9d09f59a8cd" />
+<img width="1892" height="843" alt="image" src="https://github.com/user-attachments/assets/6817bb34-16ef-413e-af3d-ffb03b904a02" />
+<img width="1607" height="810" alt="image" src="https://github.com/user-attachments/assets/8cfaecba-1ec7-4f3e-b019-71e957c92a92" />
+
+---
 
 ## Architecture
 
