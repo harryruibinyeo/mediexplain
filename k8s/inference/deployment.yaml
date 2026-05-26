@@ -1,6 +1,6 @@
 # vLLM Inference Deployment
 #
-# This is the most important manifest for the Red Hat AI SSA story.
+# This is the most important manifest 
 # It demonstrates GPU workload scheduling in Kubernetes.
 #
 # resources.limits.nvidia.com/gpu: 1
