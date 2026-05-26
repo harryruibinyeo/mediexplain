@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-MediExplain SG is a patient-facing AI application built for Singapore that explains medical documents in plain English. The project was built as a portfolio piece for the **Red Hat AI Solutions Architect (SSA) role**, demonstrating the full stack of modern AI infrastructure: LLM inference, RAG pipelines, containerisation on enterprise base images, Kubernetes orchestration, and observability.
+MediExplain SG is a patient-facing AI application built for Singapore that explains medical documents in plain English. It is a personal portfolio project demonstrating the full stack of modern AI infrastructure: LLM inference, RAG pipelines, containerisation on enterprise base images, Kubernetes orchestration, and observability.
 
 The app takes a PDF discharge summary, lab report, or insurance claim, extracts medical entities, retrieves relevant information from a 1,117-article HealthHub knowledge base, and produces a plain-language explanation grounded in Singapore's national health portal — all running fully on-premises with no data leaving the cluster (PDPA compliant).
 
@@ -52,7 +52,7 @@ Complete set of manifests for all 7 services in `k8s/`:
 ### Containers
 Containers are isolated, portable environments — sealed boxes containing the application, its dependencies, and its own filesystem. Built from a `Containerfile` (recipe) into an image (snapshot), then run as containers.
 
-Red Hat UBI9 (Universal Base Image) was used as the base for all custom services — a requirement for OpenShift compatibility and the enterprise Red Hat story.
+Red Hat UBI9 (Universal Base Image) was used as the base for all custom services — chosen for enterprise-grade compatibility and OpenShift readiness.
 
 ### Agentic AI
 An agent is a system that perceives input, reasons about it, decides what actions to take, acts, and adapts based on results. The RAG pipeline in `agent.py` is agentic because:
@@ -152,7 +152,7 @@ By running Qwen locally via vLLM, no patient data is sent to external APIs (Open
 
 ---
 
-## What This Demonstrates for Red Hat AI SSA
+## Skills Demonstrated
 
 | Skill | How demonstrated |
 |---|---|

@@ -2,7 +2,7 @@
 
 Patient-facing healthcare document explainer for Singapore. Upload a discharge summary, lab report, or insurance claim PDF and get a plain-language explanation grounded in [HealthHub](https://www.healthhub.sg) — Singapore's national health portal.
 
-Built as a portfolio project for the **Red Hat AI SSA role**, demonstrating: RAG pipelines, vLLM inference, containers on UBI9, Kubernetes manifests, sovereign AI (no data leaves the cluster — PDPA compliant).
+A personal portfolio project demonstrating: RAG pipelines, vLLM inference, containers on UBI9, Kubernetes manifests, sovereign AI (no data leaves the cluster — PDPA compliant).
 
 ---
 
