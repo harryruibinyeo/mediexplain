@@ -11,7 +11,7 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir .
 
-COPY main.py agent.py tools.py .
+COPY main.py agent.py tools.py chat.py .
 
 # FastAPI serves on port 8001
 EXPOSE 8001

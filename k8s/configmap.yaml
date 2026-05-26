@@ -24,7 +24,7 @@ data:
   # Inference (vLLM)
   # These match compose.yaml — tuned for RTX 3070 8GB VRAM.
   # -------------------------------------------------------------------------
-  VLLM_URL:                                  "http://inference:8000"
+  VLLM_URL:                                  "http://10.89.1.6:8000"
   MODEL_NAME:                                "Qwen/Qwen2.5-7B-Instruct-AWQ"
   QUANTIZATION:                              "awq"
   DTYPE:                                     "half"

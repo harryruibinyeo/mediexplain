@@ -1,0 +1,62 @@
+# Ingest Job
+#
+# A Job runs a pod to completion — unlike a Deployment which keeps the pod
+# running forever. When the ingest script finishes (exit 0), the Job is
+# marked Complete and the pod stops. This is the correct Kubernetes primitive
+# for one-shot operations like database migrations or data loading.
+#
+# restartPolicy: OnFailure
+#   If the pod crashes before finishing, Kubernetes restarts it on the same
+#   node. Combined with backoffLimit: 3, it will try up to 4 times total
+#   before marking the Job as Failed.
+#
+# Two volume mounts:
+#   1. raw-data (hostPath) → /data/raw
+#      The 1117 HealthHub JSON files copied into the kind node at /data/raw.
+#      hostPath mounts a directory from the Kubernetes NODE's filesystem
+#      directly into the pod. In kind, the "node" is a container — we use
+#      `podman cp` to put the files there before running the Job.
+#
+#   2. hf-cache (PVC) → /root/.cache/huggingface
+#      Caches the all-mpnet-base-v2 embedding model across runs.
+#      First run downloads ~420MB; subsequent runs reuse the cache.
+#      Safe to mount here because the inference pod is Pending (not using it).
+#
+# Run this Job:
+#   kubectl apply -f k8s/ingest/job.yaml
+#   kubectl logs -n mediexplain -l job-name=ingest -f
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingest
+  namespace: mediexplain
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        job-name: ingest
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: ingest
+          image: localhost/mediexplain-sg_ingest:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: mediexplain-config
+          volumeMounts:
+            - name: raw-data
+              mountPath: /data/raw
+              readOnly: true
+            - name: hf-cache
+              mountPath: /root/.cache/huggingface
+      volumes:
+        - name: raw-data
+          hostPath:
+            path: /data/raw       # populated by: podman cp data/webscraping/raw/. mediexplain-control-plane:/data/raw/
+            type: DirectoryOrCreate
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache

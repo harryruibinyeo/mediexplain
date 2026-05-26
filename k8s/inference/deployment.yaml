@@ -46,7 +46,7 @@ spec:
     spec:
       containers:
         - name: inference
-          image: mediexplain-inference:latest
+          image: localhost/mediexplain-inference:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8000

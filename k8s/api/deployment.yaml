@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: mediexplain-api:latest
+          image: localhost/mediexplain-api:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8001

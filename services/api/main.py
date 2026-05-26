@@ -29,11 +29,13 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from pgvector.psycopg2 import register_vector
 from prometheus_fastapi_instrumentator import Instrumentator
 from sentence_transformers import SentenceTransformer
 
 import agent
+import chat
 
 # ---------------------------------------------------------------------------
 # Structured logging
@@ -162,6 +164,41 @@ async def explain(file: UploadFile = File(...)):
         filename=file.filename,
         tool_calls=result["meta"]["tool_calls"],
         citations=len(result["citations"]),
+        latency_s=result["meta"]["latency_s"],
+    )
+
+    return JSONResponse(result)
+
+
+class ChatRequest(BaseModel):
+    question: str
+
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    """
+    Accept a plain-English question and return an answer grounded in the
+    knowledge base. Uses a 4-step NL2SQL pipeline:
+      1. Qwen generates a SELECT query from the question
+      2. Python validates the SQL (blocks destructive operations)
+      3. psycopg2 executes the query against knowledge_base
+      4. Qwen explains the results in plain English
+    """
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    log.info("chat_request", question=request.question[:80])
+
+    result = await chat.run(
+        question=request.question,
+        conn=app.state.conn,
+        vllm_url=VLLM_URL,
+        model_name=MODEL_NAME,
+    )
+
+    log.info(
+        "chat_complete",
+        row_count=result["meta"]["row_count"],
         latency_s=result["meta"]["latency_s"],
     )
 

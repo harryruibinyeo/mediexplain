@@ -55,7 +55,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["📄 Explain Document", "📊 Live Monitoring"],
+    ["📄 Explain Document", "💬 Chat", "📊 Live Monitoring"],
     label_visibility="collapsed",
 )
 
@@ -162,7 +162,104 @@ if page == "📄 Explain Document":
 
 
 # ===========================================================================
-# PAGE 2 — LIVE MONITORING
+# PAGE 2 — CHAT (NL2SQL)
+# ===========================================================================
+elif page == "💬 Chat":
+
+    st.title("💬 Chat with the Knowledge Base")
+    st.markdown(
+        "Ask plain-English questions about the **HealthHub knowledge base**. "
+        "The agent writes a SQL query, runs it, and explains the results."
+    )
+    st.markdown("---")
+
+    # Example questions to help users get started
+    st.markdown("**Example questions:**")
+    st.markdown(
+        "- What medications are available for diabetes?\n"
+        "- How many health conditions are in the database?\n"
+        "- Show me articles about hypertension\n"
+        "- What categories of articles are available?\n"
+        "- List all medications that start with the letter A"
+    )
+    st.markdown("---")
+
+    if "chat_answer"   not in st.session_state:
+        st.session_state.chat_answer   = None
+    if "chat_sql"      not in st.session_state:
+        st.session_state.chat_sql      = None
+    if "chat_rows"     not in st.session_state:
+        st.session_state.chat_rows     = None
+    if "chat_error"    not in st.session_state:
+        st.session_state.chat_error    = None
+    if "chat_latency"  not in st.session_state:
+        st.session_state.chat_latency  = None
+    if "chat_question" not in st.session_state:
+        st.session_state.chat_question = ""
+
+    question = st.text_input(
+        "Your question",
+        placeholder="What medications are used for high blood pressure?",
+        value=st.session_state.chat_question,
+    )
+
+    ask_btn = st.button("Ask", type="primary", use_container_width=True)
+
+    if ask_btn:
+        if not question.strip():
+            st.warning("Please enter a question first.")
+        else:
+            st.session_state.chat_question = question
+            with st.spinner("Thinking..."):
+                t_start = time.perf_counter()
+                try:
+                    response = httpx.post(
+                        f"{API_URL}/chat",
+                        json={"question": question},
+                        timeout=120.0,
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    st.session_state.chat_answer   = data.get("answer")
+                    st.session_state.chat_sql      = data.get("sql")
+                    st.session_state.chat_rows     = data.get("rows", [])
+                    st.session_state.chat_error    = data.get("error")
+                    st.session_state.chat_latency  = round(time.perf_counter() - t_start, 1)
+                    log.info("chat_complete", question=question[:80],
+                             latency_s=st.session_state.chat_latency)
+                except httpx.HTTPStatusError as e:
+                    st.error(f"API error {e.response.status_code}: {e.response.text}")
+                    log.error("chat_http_error", status=e.response.status_code)
+                except Exception as e:
+                    st.error(f"Something went wrong: {str(e)}")
+                    log.error("chat_failed", error=str(e))
+
+    # Display results
+    if st.session_state.chat_answer is not None:
+        st.markdown("---")
+
+        if st.session_state.chat_error:
+            st.warning(st.session_state.chat_answer)
+        else:
+            st.markdown("**Answer:**")
+            st.markdown(st.session_state.chat_answer)
+
+        # Show the generated SQL — great for demo
+        if st.session_state.chat_sql:
+            with st.expander("🔍 Generated SQL query"):
+                st.code(st.session_state.chat_sql, language="sql")
+
+        # Show raw rows as a table
+        if st.session_state.chat_rows:
+            with st.expander(f"📋 Raw results ({len(st.session_state.chat_rows)} rows)"):
+                st.dataframe(st.session_state.chat_rows, use_container_width=True)
+
+        if st.session_state.chat_latency:
+            st.caption(f"Response time: {st.session_state.chat_latency}s")
+
+
+# ===========================================================================
+# PAGE 3 — LIVE MONITORING
 # ===========================================================================
 elif page == "📊 Live Monitoring":
 
