@@ -1,0 +1,14 @@
+# PersistentVolumeClaim for MinIO object storage.
+# Stores uploaded PDF files so they persist across MinIO pod restarts.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data
+  namespace: mediexplain
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,53 @@
+# kind cluster configuration for MediExplain SG
+#
+# Creates a single-node cluster (control-plane also runs workloads).
+# extraPortMappings forward NodePort services to your laptop so
+# localhost:8501 etc. work exactly as they did with podman-compose.
+#
+# GPU support: kind uses containerd internally. For GPU to work you need
+# the NVIDIA Container Toolkit installed on the host and containerd
+# configured to use the nvidia runtime. The containerdConfigPatches block
+# below does that. If you have not set up the NVIDIA Container Toolkit,
+# omit that block and GPU pods will stay Pending.
+#
+# Create the cluster:
+#   kind create cluster --config k8s/kind-config.yaml
+#
+# Delete it:
+#   kind delete cluster --name mediexplain
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: mediexplain
+
+nodes:
+  - role: control-plane
+    # Forward NodePort numbers to matching host ports so URLs stay the same
+    extraPortMappings:
+      - containerPort: 30501   # ui NodePort  → localhost:8501
+        hostPort: 8501
+        protocol: TCP
+      - containerPort: 30001   # api NodePort → localhost:8001
+        hostPort: 8001
+        protocol: TCP
+      - containerPort: 30090   # prometheus   → localhost:9090
+        hostPort: 9090
+        protocol: TCP
+      - containerPort: 30000   # grafana      → localhost:3000
+        hostPort: 3000
+        protocol: TCP
+      - containerPort: 30901   # minio console→ localhost:9001
+        hostPort: 9001
+        protocol: TCP
+
+# Tell containerd (kind's internal runtime) to use the nvidia runtime
+# for containers that request GPU resources. Requires NVIDIA Container
+# Toolkit installed on the host machine.
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      default_runtime_name = "nvidia"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+      runtime_type = "io.containerd.runc.v2"
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+        BinaryName = "/usr/bin/nvidia-container-runtime"

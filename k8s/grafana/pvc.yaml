@@ -1,0 +1,14 @@
+# PersistentVolumeClaim for Grafana dashboard state.
+# Stores any dashboards or preferences saved via the UI across pod restarts.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: mediexplain
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

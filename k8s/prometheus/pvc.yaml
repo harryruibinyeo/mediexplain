@@ -1,0 +1,14 @@
+# PersistentVolumeClaim for Prometheus time-series data.
+# Survives pod restarts so historical metrics are not lost.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: mediexplain
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

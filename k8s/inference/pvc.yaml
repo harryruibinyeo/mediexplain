@@ -1,0 +1,21 @@
+# PersistentVolumeClaim for the HuggingFace model cache.
+#
+# vLLM downloads Qwen 2.5 7B AWQ (~4.5GB) from HuggingFace on first start
+# and caches it at /root/.cache/huggingface. This PVC mounts there so the
+# model survives pod restarts — exactly like the hf-cache named volume in
+# compose.yaml.
+#
+# 15Gi gives headroom: the model is ~4.5GB but HuggingFace cache also stores
+# tokenizer files, config blobs, and partial downloads.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hf-cache
+  namespace: mediexplain
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi

@@ -1,0 +1,18 @@
+# Streamlit UI Service
+#
+# NodePort so the UI is reachable at http://localhost:8501 from your browser.
+# kind-config.yaml maps NodePort 30501 → host port 8501.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+  namespace: mediexplain
+spec:
+  selector:
+    app: ui
+  type: NodePort
+  ports:
+    - port: 8501
+      targetPort: 8501
+      nodePort: 30501

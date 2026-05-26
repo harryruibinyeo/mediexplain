@@ -1,0 +1,60 @@
+# NVIDIA Device Plugin DaemonSet
+#
+# A DaemonSet runs one pod on EVERY node in the cluster. This one runs the
+# NVIDIA device plugin, which:
+#   1. Detects GPUs on the node
+#   2. Registers them with the Kubernetes scheduler as a resource
+#      (nvidia.com/gpu)
+#   3. Enables pods to request GPU via:
+#        resources:
+#          limits:
+#            nvidia.com/gpu: 1
+#
+# Without this, GPU resource requests are ignored and inference pods will
+# start but vLLM will run on CPU only (very slow).
+#
+# Lives in kube-system namespace (cluster infrastructure, not app namespace).
+#
+# Apply once after cluster creation:
+#   kubectl apply -f k8s/nvidia-device-plugin.yaml
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      tolerations:
+        # Allow this pod to run on nodes tainted with nvidia.com/gpu
+        # (common in GPU-only node pools)
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      priorityClassName: system-node-critical
+      containers:
+        - name: nvidia-device-plugin
+          image: nvcr.io/nvidia/k8s-device-plugin:v0.17.0
+          env:
+            - name: FAIL_ON_INIT_ERROR
+              value: "false"   # don't crash the DaemonSet on non-GPU nodes
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins

@@ -1,0 +1,79 @@
+# vLLM Inference Deployment
+#
+# This is the most important manifest for the Red Hat AI SSA story.
+# It demonstrates GPU workload scheduling in Kubernetes.
+#
+# resources.limits.nvidia.com/gpu: 1
+#   This is how Kubernetes allocates GPUs. The NVIDIA device plugin
+#   (k8s/nvidia-device-plugin.yaml) registers each GPU as a countable
+#   resource. Requesting 1 means "schedule this pod on a node that has
+#   at least 1 free GPU, and dedicate that GPU to this pod."
+#   Unlike CPU/memory, GPUs are not shared — 1 pod gets the whole GPU.
+#
+# imagePullPolicy: Never
+#   This image was built locally and loaded into kind with:
+#     podman build -t mediexplain-inference:latest services/inference/
+#     kind load docker-image mediexplain-inference:latest --name mediexplain
+#   Never tells Kubernetes: do NOT try to pull from a registry.
+#   If the image is not in the local cache, fail rather than pull.
+#
+# readinessProbe initialDelaySeconds: 180
+#   vLLM takes 2-3 minutes to load the model into GPU memory.
+#   The readiness probe waits 3 minutes before checking /health.
+#   Until the probe passes, no traffic is routed to this pod and
+#   the api pod will crash-loop (expected — Kubernetes retries it).
+#
+# envFrom: configMapRef
+#   All env vars from the ConfigMap are injected. The entrypoint.sh
+#   reads MODEL_NAME, MAX_MODEL_LEN, GPU_MEMORY_UTILIZATION etc.
+#   VLLM_USE_FLASHINFER_SAMPLER and VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS
+#   are read directly by vLLM from the process environment.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference
+  namespace: mediexplain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inference
+  template:
+    metadata:
+      labels:
+        app: inference
+    spec:
+      containers:
+        - name: inference
+          image: mediexplain-inference:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: mediexplain-config
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /root/.cache/huggingface
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            failureThreshold: 3
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache

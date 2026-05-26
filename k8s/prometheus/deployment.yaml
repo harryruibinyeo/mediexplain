@@ -1,0 +1,69 @@
+# Prometheus Deployment
+#
+# Two volume mounts:
+#   1. prometheus-config (ConfigMap) → /etc/prometheus
+#      The prometheus.yml scrape config lives here.
+#   2. prometheus-data   (PVC)       → /prometheus
+#      Time-series data written here.
+#
+# securityContext.fsGroup: 65534
+#   The official prometheus image runs as UID 65534 (nobody).
+#   fsGroup ensures the mounted PVC is group-writable by GID 65534.
+#   Without this prometheus cannot write its data directory.
+#
+# securityContext.runAsUser: 65534
+#   Explicitly run as nobody — OpenShift requires non-root containers.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: mediexplain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+        runAsNonRoot: true
+      containers:
+        - name: prometheus
+          image: docker.io/prom/prometheus:latest
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+            - "--web.console.templates=/usr/share/prometheus/consoles"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            - name: prometheus-data
+              mountPath: /prometheus
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-data

@@ -1,0 +1,22 @@
+# PostgreSQL Service (ClusterIP)
+#
+# ClusterIP means this Service is only reachable INSIDE the cluster.
+# The api pod connects to postgres using the hostname "postgres" —
+# Kubernetes DNS resolves that to this Service's IP, which then
+# forwards traffic to the postgres-0 pod.
+#
+# No NodePort: there is no reason to expose the database to your laptop.
+# All database access goes through the API.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mediexplain
+spec:
+  selector:
+    app: postgres
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432

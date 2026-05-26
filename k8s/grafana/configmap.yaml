@@ -1,0 +1,24 @@
+# Grafana datasource auto-provisioning ConfigMap.
+#
+# Grafana reads files from /etc/grafana/provisioning/datasources/ at startup
+# and automatically creates the data sources defined there. This means you
+# never have to manually add Prometheus in the Grafana UI — it is already
+# connected when the pod first starts.
+#
+# This is the same file as monitoring/grafana/datasources/prometheus.yml
+# expressed as a ConfigMap so it can be mounted into the pod.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: mediexplain
+data:
+  prometheus.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true

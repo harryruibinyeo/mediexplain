@@ -1,0 +1,19 @@
+# Grafana Service
+#
+# NodePort so you can open http://localhost:3000 in your browser.
+# kind-config.yaml maps NodePort 30000 → host port 3000.
+# Login: admin / admin (from Secret)
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: mediexplain
+spec:
+  selector:
+    app: grafana
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000

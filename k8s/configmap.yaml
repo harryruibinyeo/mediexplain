@@ -1,0 +1,58 @@
+# Non-sensitive configuration shared across all MediExplain services.
+# All pods reference this ConfigMap via envFrom so env vars are injected
+# automatically — no hardcoding in individual Deployments.
+#
+# Service hostnames use Kubernetes DNS short names (just the Service name)
+# because all pods are in the same namespace. The full form would be:
+#   postgres.mediexplain.svc.cluster.local
+# but "postgres" resolves to the same thing within the mediexplain namespace.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mediexplain-config
+  namespace: mediexplain
+data:
+  # -------------------------------------------------------------------------
+  # Database
+  # -------------------------------------------------------------------------
+  DATABASE_URL: "postgresql://mediexplain:mediexplain@postgres:5432/mediexplain"
+  POSTGRES_DB:  "mediexplain"
+  POSTGRES_USER: "mediexplain"
+
+  # -------------------------------------------------------------------------
+  # Inference (vLLM)
+  # These match compose.yaml — tuned for RTX 3070 8GB VRAM.
+  # -------------------------------------------------------------------------
+  VLLM_URL:                                  "http://inference:8000"
+  MODEL_NAME:                                "Qwen/Qwen2.5-7B-Instruct-AWQ"
+  QUANTIZATION:                              "awq"
+  DTYPE:                                     "half"
+  MAX_MODEL_LEN:                             "2048"
+  GPU_MEMORY_UTILIZATION:                    "0.85"
+  PORT:                                      "8000"
+  VLLM_USE_FLASHINFER_SAMPLER:               "0"
+  VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS:  "0"
+
+  # -------------------------------------------------------------------------
+  # Embedding model (must match ingest service)
+  # -------------------------------------------------------------------------
+  EMBED_MODEL: "all-mpnet-base-v2"
+
+  # -------------------------------------------------------------------------
+  # Ingest
+  # -------------------------------------------------------------------------
+  RAW_DATA_DIR:   "/data/raw"
+  CHUNK_SIZE:     "600"
+  CHUNK_OVERLAP:  "100"
+
+  # -------------------------------------------------------------------------
+  # UI
+  # -------------------------------------------------------------------------
+  API_URL:        "http://api:8001"
+  PROMETHEUS_URL: "http://prometheus:9090"
+
+  # -------------------------------------------------------------------------
+  # Grafana
+  # -------------------------------------------------------------------------
+  GF_USERS_ALLOW_SIGN_UP: "false"

@@ -1,0 +1,76 @@
+# Grafana Deployment
+#
+# Two volume mounts:
+#   1. grafana-datasources (ConfigMap) → /etc/grafana/provisioning/datasources
+#      Auto-connects Prometheus as a data source on first start.
+#   2. grafana-data (PVC) → /var/lib/grafana
+#      Persists dashboards and settings.
+#
+# Credentials come from Secret. GF_USERS_ALLOW_SIGN_UP comes from ConfigMap
+# since it is not sensitive.
+#
+# securityContext.fsGroup: 472
+#   Grafana runs as UID 472. fsGroup ensures the PVC is group-writable.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: mediexplain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+      containers:
+        - name: grafana
+          image: docker.io/grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mediexplain-secret
+                  key: GF_SECURITY_ADMIN_USER
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mediexplain-secret
+                  key: GF_SECURITY_ADMIN_PASSWORD
+            - name: GF_USERS_ALLOW_SIGN_UP
+              valueFrom:
+                configMapKeyRef:
+                  name: mediexplain-config
+                  key: GF_USERS_ALLOW_SIGN_UP
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: grafana-data
+          persistentVolumeClaim:
+            claimName: grafana-data
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources

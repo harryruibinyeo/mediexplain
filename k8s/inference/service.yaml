@@ -1,0 +1,20 @@
+# vLLM Inference Service (ClusterIP)
+#
+# Internal only — only the api pod calls this service at:
+#   POST http://inference:8000/v1/chat/completions
+#
+# Not exposed externally. The LLM endpoint is not meant to be
+# called directly by end users — all requests go through the API.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference
+  namespace: mediexplain
+spec:
+  selector:
+    app: inference
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000

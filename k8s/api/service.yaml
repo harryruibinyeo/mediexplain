@@ -1,0 +1,21 @@
+# FastAPI Service
+#
+# NodePort so you can open http://localhost:8001/docs in your browser.
+# kind-config.yaml maps NodePort 30001 → host port 8001.
+#
+# The ui pod also uses this Service internally (http://api:8001)
+# via the ClusterIP — NodePort services have a ClusterIP too.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: mediexplain
+spec:
+  selector:
+    app: api
+  type: NodePort
+  ports:
+    - port: 8001
+      targetPort: 8001
+      nodePort: 30001

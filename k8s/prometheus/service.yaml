@@ -1,0 +1,19 @@
+# Prometheus Service
+#
+# NodePort so you can open http://localhost:9090 in your browser.
+# kind-config.yaml maps NodePort 30090 → host port 9090.
+# Grafana also uses this Service internally (http://prometheus:9090).
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: mediexplain
+spec:
+  selector:
+    app: prometheus
+  type: NodePort
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090

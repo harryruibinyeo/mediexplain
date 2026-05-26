@@ -1,0 +1,26 @@
+# MinIO Service
+#
+# NodePort because the web console (port 9001) needs to be reachable
+# from your laptop browser. The kind-config.yaml maps NodePort 30901
+# to host port 9001, so http://localhost:9001 still works.
+#
+# The S3 API port (9000) is also exposed via NodePort but you won't
+# use it directly — only the api pod calls it internally via ClusterIP DNS.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: mediexplain
+spec:
+  selector:
+    app: minio
+  type: NodePort
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 9001
+      targetPort: 9001
+      nodePort: 30901

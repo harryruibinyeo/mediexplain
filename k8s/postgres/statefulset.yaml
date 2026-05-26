@@ -1,0 +1,79 @@
+# PostgreSQL StatefulSet
+#
+# Why StatefulSet and not Deployment?
+# - Stable pod name: always postgres-0, never a random hash.
+#   Other pods hardcode "postgres" as the hostname in DATABASE_URL.
+# - Stable storage: postgres-0 always gets the same PVC (pgdata).
+#   A Deployment pod could mount a different volume after restart.
+#
+# readinessProbe vs livenessProbe:
+#   readinessProbe — is postgres ready to accept connections?
+#                    Kubernetes won't route traffic to the pod until this passes.
+#                    The api pod will crash-loop until this is Ready.
+#   livenessProbe  — is postgres still alive?
+#                    If this fails Kubernetes restarts the pod.
+#
+# securityContext.fsGroup: 999
+#   The postgres process runs as UID 999 inside the container.
+#   fsGroup tells Kubernetes to chown the mounted volume to GID 999
+#   so postgres can write to it. Without this the volume is owned by
+#   root and postgres gets "Permission denied".
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: mediexplain
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: docker.io/pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: mediexplain-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mediexplain-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mediexplain-secret
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "mediexplain"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "mediexplain"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: pgdata

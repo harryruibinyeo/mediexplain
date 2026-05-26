@@ -1,0 +1,55 @@
+# FastAPI RAG Agent Deployment
+#
+# No --reload flag (unlike compose.yaml entrypoint override).
+# --reload is for development only — it watches files and restarts uvicorn.
+# In Kubernetes you redeploy by building a new image and updating the
+# Deployment (kubectl set image or kubectl rollout restart).
+#
+# The api pod will crash on first start because postgres and inference
+# are not ready yet. That is fine and expected — Kubernetes will keep
+# restarting it (CrashLoopBackOff) with exponential backoff until both
+# dependencies are healthy. This is the Kubernetes-native pattern;
+# there is no depends_on equivalent.
+#
+# imagePullPolicy: Never — image loaded into kind locally:
+#   podman build -t mediexplain-api:latest services/api/
+#   kind load docker-image mediexplain-api:latest --name mediexplain
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: mediexplain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: mediexplain-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: mediexplain-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3

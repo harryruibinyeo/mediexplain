@@ -1,0 +1,11 @@
+# Every MediExplain resource lives in this namespace.
+# This isolates the project from anything else running in the cluster
+# and mirrors how OpenShift Projects work.
+#
+# Apply first before everything else:
+#   kubectl apply -f k8s/namespace.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediexplain

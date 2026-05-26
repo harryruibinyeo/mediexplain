@@ -1,0 +1,50 @@
+# Streamlit UI Deployment
+#
+# No volume mount for main.py (unlike compose.yaml which mounted the file
+# for hot-reload). In Kubernetes you rebuild the image to update code.
+#
+# /_stcore/health is Streamlit's built-in health endpoint — used for
+# both readiness and liveness probes.
+#
+# imagePullPolicy: Never — image loaded into kind locally:
+#   podman build -t mediexplain-ui:latest services/ui/
+#   kind load docker-image mediexplain-ui:latest --name mediexplain
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  namespace: mediexplain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      containers:
+        - name: ui
+          image: mediexplain-ui:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: mediexplain-config
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3

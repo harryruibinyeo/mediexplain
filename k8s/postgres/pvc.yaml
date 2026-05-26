@@ -1,0 +1,25 @@
+# PersistentVolumeClaim for PostgreSQL data.
+#
+# A PVC is a REQUEST for storage. Kubernetes finds a matching
+# PersistentVolume (actual disk) and binds it to this claim.
+# In kind the default storage class (standard) uses hostPath —
+# a directory on the kind node's local filesystem.
+#
+# The data survives pod restarts because the PVC is a separate object
+# from the pod. Even if the postgres pod is deleted and recreated,
+# it mounts the same PVC and finds all 1117 HealthHub articles intact.
+#
+# accessModes: ReadWriteOnce — only one pod can mount this volume at a time.
+# This is correct for a single-instance database.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgdata
+  namespace: mediexplain
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
